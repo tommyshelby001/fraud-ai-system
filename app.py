@@ -13,6 +13,25 @@ from utils.explain import explain_model
 # -------------------------------
 st.set_page_config(page_title="Fraud AI System", layout="wide")
 
+# 🔥 DARK THEME
+st.markdown("""
+<style>
+[data-testid="stAppViewContainer"] {
+    background: linear-gradient(135deg, #0f172a, #020617);
+    color: white;
+}
+[data-testid="stSidebar"] {
+    background: #020617;
+}
+h1, h2, h3 {color: #38bdf8;}
+.stButton>button {
+    background: linear-gradient(90deg,#06b6d4,#3b82f6);
+    color:white;
+    border-radius:10px;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # -------------------------------
 # LOGIN
 # -------------------------------
@@ -20,13 +39,25 @@ if not auth():
     st.stop()
 
 # -------------------------------
-# LOAD MODELS (ONLY SKLEARN ✅)
+# SIDEBAR (EXTRA)
+# -------------------------------
+st.sidebar.markdown("---")
+st.sidebar.markdown("### ⚡ System Status")
+st.sidebar.success("🟢 Model Active")
+st.sidebar.markdown("### 🤖 Version")
+st.sidebar.info("Fraud AI v1.0")
+
+# 🌐 LIVE LINK (NEW)
+st.sidebar.markdown("🌐 Live App: https://your-link.streamlit.app")
+
+# -------------------------------
+# LOAD MODELS
 # -------------------------------
 scaler = joblib.load("model/scaler.pkl")
 iso = joblib.load("model/isolation.pkl")
 
 # -------------------------------
-# UI STYLE 🔥
+# ORIGINAL UI STYLE
 # -------------------------------
 st.markdown("""
 <style>
@@ -40,10 +71,21 @@ h1, h2, h3 {color: #00ADB5;}
 """, unsafe_allow_html=True)
 
 st.title("💳 AI Fraud Detection System")
+
+# HERO
+st.markdown("""
+<div style='padding:15px;border-radius:12px;
+background:linear-gradient(90deg,#0ea5e9,#1e3a8a);
+text-align:center;color:white'>
+<h3>🚀 AI Fraud Detection Dashboard</h3>
+<p>Real-time • Smart • Secure</p>
+</div>
+""", unsafe_allow_html=True)
+
 st.caption("⚡ Intelligent + Explainable Fraud Detection Engine")
 
 # -------------------------------
-# RANDOM DATA 🎲
+# RANDOM DATA
 # -------------------------------
 if st.button("🎲 Auto Generate Test Data"):
     st.session_state["rand"] = [random.uniform(-2,2) for _ in range(5)] + \
@@ -52,9 +94,11 @@ if st.button("🎲 Auto Generate Test Data"):
 # -------------------------------
 # INPUTS
 # -------------------------------
+st.markdown("### 📥 Enter Transaction Details")
+
 vals = st.session_state.get("rand", [0]*7)
 
-col1, col2 = st.columns(2)
+col1, col2 = st.columns(2, gap="large")
 
 with col1:
     v1 = st.number_input("V1", value=float(vals[0]))
@@ -71,19 +115,27 @@ time = st.number_input("Time", value=float(vals[6]))
 inputs = [v1,v2,v3,v4,v5] + [0]*23 + [amount,time]
 
 # -------------------------------
-# ANALYZE 🔥
+# ANALYZE
 # -------------------------------
 if st.button("🚀 Analyze"):
 
     data = np.array(inputs).reshape(1, -1)
 
-    # ❌ No autoencoder
     iso_pred, fraud_score = predict(data, scaler, iso, None)
 
     deviation = np.std(data)
 
     st.subheader(f"📊 Fraud Score: {fraud_score:.6f}")
     st.write(f"📈 Behavior Deviation: {deviation:.4f}")
+
+    # PREMIUM CARD
+    st.markdown(f"""
+    <div style='padding:15px;border-radius:10px;
+    background:#0f172a;border:1px solid #38bdf8'>
+    <h4>📊 Fraud Score: {fraud_score:.6f}</h4>
+    <p>📈 Deviation: {deviation:.4f}</p>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.progress(min(int(fraud_score * 100), 100))
 
@@ -94,17 +146,13 @@ if st.button("🚀 Analyze"):
     else:
         st.success("✅ SAFE TRANSACTION")
 
-    # -------------------------------
-    # GRAPH 📊
-    # -------------------------------
+    # GRAPH
     fig, ax = plt.subplots()
     ax.bar(["Fraud Score"], [fraud_score])
     ax.set_title("Fraud Score Visualization")
     st.pyplot(fig)
 
-    # -------------------------------
     # AI REASONING
-    # -------------------------------
     st.subheader("🧠 AI Reasoning")
 
     if deviation > 2:
@@ -114,9 +162,7 @@ if st.button("🚀 Analyze"):
     else:
         st.write("Transaction looks normal.")
 
-    # -------------------------------
-    # SHAP (SAFE MODE)
-    # -------------------------------
+    # SHAP
     st.subheader("🔍 Explainable AI")
 
     try:
@@ -131,9 +177,7 @@ if st.button("🚀 Analyze"):
     except:
         st.warning("SHAP disabled.")
 
-    # -------------------------------
     # HISTORY
-    # -------------------------------
     if "history" not in st.session_state:
         st.session_state["history"] = []
 
@@ -150,20 +194,23 @@ if st.button("🚀 Analyze"):
         fig2, ax2 = plt.subplots()
         ax2.plot(scores, marker='o')
         ax2.set_title("📈 Fraud Score Trend")
-        ax2.set_xlabel("Transaction")
-        ax2.set_ylabel("Score")
-
         st.pyplot(fig2)
 
-    # -------------------------------
+    # LIVE GRAPH
+    if "simple_history" not in st.session_state:
+        st.session_state["simple_history"] = []
+
+    st.session_state["simple_history"].append(fraud_score)
+
+    if len(st.session_state["simple_history"]) > 1:
+        st.subheader("📊 Live Fraud Score Graph")
+        st.line_chart(st.session_state["simple_history"])
+
     # CONFIDENCE
-    # -------------------------------
     confidence = min(fraud_score * 100, 100)
     st.write(f"🧠 Confidence Score: {confidence:.2f}%")
 
-    # -------------------------------
     # FRAUD TYPE
-    # -------------------------------
     st.subheader("🎯 Fraud Type Analysis")
 
     if amount > 5000:
@@ -175,15 +222,11 @@ if st.button("🚀 Analyze"):
     else:
         st.write("💡 Type: Normal Transaction")
 
-    # -------------------------------
     # ALERT
-    # -------------------------------
     if fraud_score > 0.1:
         st.warning("🔔 ALERT: Suspicious Transaction Detected!")
 
-    # -------------------------------
-    # DOWNLOAD REPORT
-    # -------------------------------
+    # REPORT
     report = f"""
 Fraud Detection Report
 ----------------------

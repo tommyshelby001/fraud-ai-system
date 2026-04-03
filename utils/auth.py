@@ -1,48 +1,49 @@
-import streamlit as st
 import json
 import os
 
+# Database file path
 DB_FILE = "utils/auth_db.json"
 
-# ensure file exists
-if not os.path.exists(DB_FILE):
-    with open(DB_FILE, "w") as f:
-        json.dump({}, f)
 
+# Load users from JSON file
 def load_users():
+    if not os.path.exists(DB_FILE):
+        return {}
+    
     with open(DB_FILE, "r") as f:
-        return json.load(f)
+        try:
+            return json.load(f)
+        except:
+            return {}
 
+
+# Save users to JSON file
 def save_users(users):
     with open(DB_FILE, "w") as f:
-        json.dump(users, f)
+        json.dump(users, f, indent=4)
 
-def auth():
-    st.sidebar.title("🔐 Authentication")
 
-    menu = st.sidebar.radio("Select", ["Login", "Register"])
-
+# Register new user
+def register_user(username, password):
     users = load_users()
 
-    username = st.sidebar.text_input("Username")
-    password = st.sidebar.text_input("Password", type="password")
+    # Check if user already exists
+    if username in users:
+        return False
 
-    if menu == "Register":
-        if st.sidebar.button("Register"):
-            if username in users:
-                st.sidebar.error("User already exists")
-            else:
-                users[username] = password
-                save_users(users)
-                st.sidebar.success("Registered successfully")
+    # Save new user
+    users[username] = password
+    save_users(users)
 
-    elif menu == "Login":
-        if st.sidebar.button("Login"):
-            if users.get(username) == password:
-                st.session_state["logged_in"] = True
-                st.session_state["user"] = username
-                st.sidebar.success(f"Welcome {username}")
-            else:
-                st.sidebar.error("Invalid credentials")
+    return True
 
-    return st.session_state.get("logged_in", False)
+
+# Login user
+def login_user(username, password):
+    users = load_users()
+
+    # Validate credentials
+    if username in users and users[username] == password:
+        return True
+
+    return False
