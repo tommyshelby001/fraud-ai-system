@@ -1,6 +1,4 @@
 model/
 data/
 __pycache__/
-*.pkl
-*.h5
-*.keras
+
