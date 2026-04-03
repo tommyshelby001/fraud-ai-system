@@ -22,9 +22,14 @@ def save_users(users):
         json.dump(users, f)
 
 # -------------------------
-# AUTH FUNCTION (IMPORTANT)
+# AUTH FUNCTION (FIXED)
 # -------------------------
 def auth():
+
+    # ✅ SESSION FIX (IMPORTANT)
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+
     users = load_users()
 
     st.sidebar.title("🔐 Authentication")
@@ -37,11 +42,11 @@ def auth():
     if option == "Login":
         if st.sidebar.button("Login"):
             if username in users and users[username] == password:
+                st.session_state.logged_in = True
+                st.session_state.user = username
                 st.sidebar.success(f"Welcome {username}")
-                return True
             else:
                 st.sidebar.error("Invalid credentials")
-                return False
 
     # REGISTER
     if option == "Register":
@@ -53,4 +58,5 @@ def auth():
                 save_users(users)
                 st.sidebar.success("User registered! Now login.")
 
-    return False
+    # ✅ RETURN SESSION STATE
+    return st.session_state.logged_in
