@@ -3,7 +3,6 @@ import numpy as np
 import joblib
 import random
 import matplotlib.pyplot as plt
-from tensorflow.keras.models import load_model
 
 from utils.auth import auth
 from utils.predict import predict
@@ -21,11 +20,10 @@ if not auth():
     st.stop()
 
 # -------------------------------
-# LOAD MODELS
+# LOAD MODELS (ONLY SKLEARN ✅)
 # -------------------------------
 scaler = joblib.load("model/scaler.pkl")
 iso = joblib.load("model/isolation.pkl")
-autoencoder = load_model("model/autoencoder.keras", compile=False)
 
 # -------------------------------
 # UI STYLE 🔥
@@ -45,14 +43,14 @@ st.title("💳 AI Fraud Detection System")
 st.caption("⚡ Intelligent + Explainable Fraud Detection Engine")
 
 # -------------------------------
-# RANDOM AI GENERATOR 🎲
+# RANDOM DATA 🎲
 # -------------------------------
 if st.button("🎲 Auto Generate Test Data"):
     st.session_state["rand"] = [random.uniform(-2,2) for _ in range(5)] + \
                                [random.uniform(10,1000), random.uniform(0,50000)]
 
 # -------------------------------
-# INPUTS (MINIMAL PROFESSIONAL)
+# INPUTS
 # -------------------------------
 vals = st.session_state.get("rand", [0]*7)
 
@@ -73,13 +71,14 @@ time = st.number_input("Time", value=float(vals[6]))
 inputs = [v1,v2,v3,v4,v5] + [0]*23 + [amount,time]
 
 # -------------------------------
-# ANALYZE (YOUR LOGIC SAME 🔥)
+# ANALYZE 🔥
 # -------------------------------
 if st.button("🚀 Analyze"):
 
     data = np.array(inputs).reshape(1, -1)
 
-    iso_pred, fraud_score = predict(data, scaler, iso, autoencoder)
+    # ❌ No autoencoder
+    iso_pred, fraud_score = predict(data, scaler, iso, None)
 
     deviation = np.std(data)
 
@@ -116,21 +115,24 @@ if st.button("🚀 Analyze"):
         st.write("Transaction looks normal.")
 
     # -------------------------------
-    # SHAP 🔥
+    # SHAP (SAFE MODE)
     # -------------------------------
     st.subheader("🔍 Explainable AI")
 
-    shap_values = explain_model(autoencoder, data)
+    try:
+        shap_values = explain_model(None, data)
 
-    if shap_values is not None:
-        import shap
-        shap.summary_plot(shap_values, data, show=False)
-        st.pyplot(plt.gcf())
-    else:
-        st.warning("SHAP not available.")
+        if shap_values is not None:
+            import shap
+            shap.summary_plot(shap_values, data, show=False)
+            st.pyplot(plt.gcf())
+        else:
+            st.warning("SHAP not available.")
+    except:
+        st.warning("SHAP disabled.")
 
     # -------------------------------
-    # SAVE HISTORY 🔥 (STEP 1)
+    # HISTORY
     # -------------------------------
     if "history" not in st.session_state:
         st.session_state["history"] = []
@@ -140,9 +142,6 @@ if st.button("🚀 Analyze"):
         "deviation": deviation
     })
 
-    # -------------------------------
-    # FRAUD TREND GRAPH 📊 (STEP 2)
-    # -------------------------------
     history = st.session_state.get("history", [])
 
     if len(history) > 1:
@@ -157,13 +156,13 @@ if st.button("🚀 Analyze"):
         st.pyplot(fig2)
 
     # -------------------------------
-    # CONFIDENCE SCORE 🔥
+    # CONFIDENCE
     # -------------------------------
     confidence = min(fraud_score * 100, 100)
     st.write(f"🧠 Confidence Score: {confidence:.2f}%")
 
     # -------------------------------
-    # FRAUD TYPE 🔥
+    # FRAUD TYPE
     # -------------------------------
     st.subheader("🎯 Fraud Type Analysis")
 
@@ -177,13 +176,13 @@ if st.button("🚀 Analyze"):
         st.write("💡 Type: Normal Transaction")
 
     # -------------------------------
-    # ALERT 🔔
+    # ALERT
     # -------------------------------
     if fraud_score > 0.1:
         st.warning("🔔 ALERT: Suspicious Transaction Detected!")
 
     # -------------------------------
-    # DOWNLOAD REPORT 📄
+    # DOWNLOAD REPORT
     # -------------------------------
     report = f"""
 Fraud Detection Report
